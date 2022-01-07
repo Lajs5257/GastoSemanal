@@ -24,10 +24,21 @@ class Presupuesto {
     nuevoGasto(gasto) {
         if(this.restante >= gasto.cantidad){
             this.gastos = [...this.gastos, gasto];
-            this.restante -= gasto.cantidad;
+            this.calcularRestante();
         }else{
             ui.imprimirAlerta('Se supera el presupuesto restante','error');
         }
+    }
+
+    calcularRestante(){
+        const gastado = this.gastos.reduce((total, gasto) =>  total + gasto.cantidad, 0);
+
+        this.restante = this.presupuesto - gastado;
+    }
+
+    eliminarGasto(id) {
+        this.gastos = this.gastos.filter(gasto => gasto.id !== id)
+        this.calcularRestante();
     }
 }
 
@@ -71,7 +82,7 @@ class UI {
     }
 
     // mostramos el listado
-    agregarGastoListado(gastos) {
+    mostrarGastos(gastos) {
         //Reinicamos los gastos en pantalla
         this.limpiarHTML();
 
@@ -91,11 +102,36 @@ class UI {
             const btnBorrar = document.createElement('button');
             btnBorrar.classList.add('btn', 'btn-danger', 'borrar-gasto');
             btnBorrar.innerHTML = 'Borrar &times;';
+            btnBorrar.onclick = () => {
+                eliminarGasto(id);
+            }
             nuevoGasto.appendChild(btnBorrar);
 
             // Agregar al HTML
             gastoListado.appendChild(nuevoGasto);
         });
+    }
+
+    actualizarRestante(restante) {
+        document.querySelector('#restante').textContent = restante;
+    }
+
+    comprobarPresupuesto(presupuestoObj) {
+        const { presupuesto, restante } = presupuestoObj;
+
+        const restanteDiv = document.querySelector('.restante');
+
+        // Comprobar 25%
+        if( (presupuesto / 4) > restante) {
+            restanteDiv.classList.remove('alert-success', 'alert-warning');
+            restanteDiv.classList.add('alert-danger');
+        } else if( (presupuesto / 2) > restante) { //50%
+            restanteDiv.classList.remove('alert-success');
+            restanteDiv.classList.add('alert-warning');
+        } else {
+            restanteDiv.classList.remove('alert-danger', 'alert-warning');
+            restanteDiv.classList.add('alert-success');
+        }
     }
 }
 
@@ -146,9 +182,21 @@ function agregarGasto(e) {
     ui.imprimirAlerta('Gasto agregado correctamente');
 
     // Imprimir los gastos
-    const { gastos } = presupuesto;
-    ui.agregarGastoListado(gastos);
+    const { gastos, restante } = presupuesto;
+    ui.mostrarGastos(gastos);
+
+    ui.actualizarRestante(restante);
+    
+    ui.comprobarPresupuesto(presupuesto);
 
     // Reiniciamos el fromulario
     formulario.reset();
+}
+
+function eliminarGasto(id) {
+    presupuesto.eliminarGasto(id);
+    const { gastos, restante } = presupuesto;
+    ui.mostrarGastos(gastos);
+    ui.actualizarRestante(restante);
+    ui.comprobarPresupuesto(presupuesto);
 }
